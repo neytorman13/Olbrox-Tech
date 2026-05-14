@@ -8,6 +8,7 @@ import { WhatsAppButton } from "@/components/whatsapp-button"
 import { PageViewTracker } from "@/components/page-view-tracker"
 import { querySingle } from "@/lib/db"
 import { normalizeService, type ServiceRecord } from "@/lib/services"
+import { defaultServices } from "@/lib/site-defaults"
 
 export const dynamic = "force-dynamic"
 
@@ -24,6 +25,35 @@ const iconLookup = {
   palette: Brush,
 }
 
+function getFallbackService(slug: string): ServiceRecord | null {
+  const fallback = defaultServices.find((service) => service.slug === slug && service.is_published)
+  if (!fallback) {
+    return null
+  }
+
+  return {
+    id: `default-${fallback.slug}`,
+    name_es: fallback.name_es,
+    name_en: fallback.name_en,
+    name_pt: fallback.name_pt,
+    description_es: fallback.description_es,
+    description_en: fallback.description_en,
+    description_pt: fallback.description_pt,
+    icon: fallback.icon,
+    features: fallback.features,
+    is_published: fallback.is_published,
+    is_featured: fallback.is_featured,
+    display_order: fallback.display_order,
+    slug: fallback.slug,
+    hero_title: fallback.hero_title,
+    hero_description: fallback.hero_description,
+    detail_content: fallback.detail_content,
+    process_steps: fallback.process_steps,
+    deliverables: fallback.deliverables,
+    use_cases: fallback.use_cases,
+  }
+}
+
 export default async function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   let row: ServiceRecord | null = null
@@ -35,6 +65,10 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     )
   } catch (error) {
     console.error(`Error loading service ${slug}:`, error)
+  }
+
+  if (!row) {
+    row = getFallbackService(slug)
   }
 
   if (!row) {
