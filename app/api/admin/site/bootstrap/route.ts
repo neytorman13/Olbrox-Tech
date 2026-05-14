@@ -2,6 +2,7 @@ export const runtime = "nodejs"
 
 import { NextResponse } from "next/server"
 import { query, querySingle } from "@/lib/db"
+import { ensureAnalyticsSchema } from "@/lib/analytics-server"
 import { defaultContentBlocks, defaultProjects, defaultServices } from "@/lib/site-defaults"
 import { slugifyService } from "@/lib/services"
 
@@ -251,6 +252,7 @@ async function collectCounts() {
 
 export async function POST() {
   try {
+    await ensureAnalyticsSchema()
     await ensureServicesSchema()
     await ensureContentBlocks()
     await ensureProjects()

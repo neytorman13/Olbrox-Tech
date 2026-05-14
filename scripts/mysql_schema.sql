@@ -73,12 +73,18 @@ CREATE TABLE IF NOT EXISTS page_analytics (
   user_agent TEXT,
   referrer TEXT,
   country TEXT,
+  country_code VARCHAR(8),
+  region TEXT,
   city TEXT,
   device_type ENUM('desktop','mobile','tablet'),
   browser TEXT,
   os TEXT,
   session_id TEXT,
   visit_duration INT DEFAULT 0,
+  traffic_source VARCHAR(191),
+  utm_source VARCHAR(191),
+  utm_medium VARCHAR(191),
+  utm_campaign VARCHAR(191),
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

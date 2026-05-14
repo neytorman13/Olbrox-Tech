@@ -2,16 +2,21 @@ export const runtime = "nodejs"
 
 import { NextResponse } from "next/server"
 import { query } from "@/lib/db"
+import { ensureAnalyticsSchema } from "@/lib/analytics-server"
 
 type CountRow = { total: number }
 type TrendRow = { day: string; visits: number }
 type DeviceRow = { label: string | null; total: number }
 type PageRow = { page_path: string | null; total: number }
+type CountryRow = { country: string | null; total: number }
+type SourceRow = { source: string | null; total: number }
 type HealthRow = { block_identifier: string; is_published: number }
 type UpdateRow = { id: string; title: string; type: string; updated_at: string }
 
 export async function GET() {
   try {
+    await ensureAnalyticsSchema()
+
     const [
       contentRows,
       serviceRows,
@@ -23,6 +28,9 @@ export async function GET() {
       avgDurationRows,
       topPages,
       deviceRows,
+      countryCoverageRows,
+      countryRows,
+      sourceRows,
       healthRows,
       recentUpdates,
       traffic14,
@@ -61,6 +69,32 @@ export async function GET() {
           FROM page_analytics
           GROUP BY device_type
           ORDER BY total DESC
+        `,
+      ),
+      query<CountRow[]>(
+        `
+          SELECT COUNT(DISTINCT NULLIF(country, '')) AS total
+          FROM page_analytics
+          WHERE country IS NOT NULL
+            AND country <> ''
+        `,
+      ),
+      query<CountryRow[]>(
+        `
+          SELECT COALESCE(NULLIF(country, ''), 'Desconocido') AS country, COUNT(*) AS total
+          FROM page_analytics
+          GROUP BY COALESCE(NULLIF(country, ''), 'Desconocido')
+          ORDER BY total DESC
+          LIMIT 6
+        `,
+      ),
+      query<SourceRow[]>(
+        `
+          SELECT COALESCE(NULLIF(traffic_source, ''), 'directo') AS source, COUNT(*) AS total
+          FROM page_analytics
+          GROUP BY COALESCE(NULLIF(traffic_source, ''), 'directo')
+          ORDER BY total DESC
+          LIMIT 6
         `,
       ),
       query<HealthRow[]>(
@@ -121,6 +155,13 @@ export async function GET() {
     const avgDuration = avgDurationRows[0] || { total: 0 }
     const currentVisits = Number((trafficPrev14[0] || { total: 0 }).total || 0)
     const previousVisits = Number((previousWindow[0] || { total: 0 }).total || 0)
+    const totalCountryCoverage = Number((countryCoverageRows[0] || { total: 0 }).total || 0)
+    const topCountry = countryRows[0] || null
+    const topSource = sourceRows[0] || null
+    const mobileVisits = deviceRows
+      .filter((row) => row.label === "mobile" || row.label === "tablet")
+      .reduce((sum, row) => sum + Number(row.total || 0), 0)
+    const mobileShare = Number(visits.total || 0) > 0 ? Math.round((mobileVisits / Number(visits.total || 0)) * 100) : 0
 
     const requiredBlocks = ["hero", "about", "cta"]
     const publishedBlocks = new Set(
@@ -162,16 +203,40 @@ export async function GET() {
         avgVisitDuration: Math.round(Number(avgDuration.total || 0)),
         trafficGrowth,
         contentHealthScore,
+        countryCoverage: totalCountryCoverage,
+        mobileShare,
       },
       trends: traffic14,
       devices: deviceRows.map((row) => ({
         label: row.label || "unknown",
         total: Number(row.total || 0),
       })),
+      countries: countryRows.map((row) => ({
+        country: row.country || "Desconocido",
+        total: Number(row.total || 0),
+      })),
+      sources: sourceRows.map((row) => ({
+        source: row.source || "directo",
+        total: Number(row.total || 0),
+      })),
       topPages: topPages.map((row) => ({
         page: row.page_path || "/",
         total: Number(row.total || 0),
       })),
+      insights: {
+        topCountry: topCountry
+          ? {
+              country: topCountry.country || "Desconocido",
+              total: Number(topCountry.total || 0),
+            }
+          : null,
+        topSource: topSource
+          ? {
+              source: topSource.source || "directo",
+              total: Number(topSource.total || 0),
+            }
+          : null,
+      },
       recentUpdates,
       health: {
         missingBlocks,

@@ -41,12 +41,18 @@ CREATE TABLE IF NOT EXISTS public.page_analytics (
   user_agent TEXT,
   referrer TEXT,
   country TEXT,
+  country_code TEXT,
+  region TEXT,
   city TEXT,
   device_type TEXT CHECK (device_type IN ('desktop', 'mobile', 'tablet')),
   browser TEXT,
   os TEXT,
   session_id TEXT,
   visit_duration INTEGER DEFAULT 0,
+  traffic_source TEXT,
+  utm_source TEXT,
+  utm_medium TEXT,
+  utm_campaign TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

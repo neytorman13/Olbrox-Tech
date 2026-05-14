@@ -169,7 +169,14 @@ export default function AnalyticsPage() {
 
   // Referrers
   const referrerDistribution = analytics.reduce((acc: Record<string, number>, item) => {
-    const ref = item.referrer ? new URL(item.referrer).hostname : "Directo"
+    let ref = "Directo"
+    if (item.referrer) {
+      try {
+        ref = new URL(item.referrer).hostname
+      } catch {
+        ref = item.referrer
+      }
+    }
     acc[ref] = (acc[ref] || 0) + 1
     return acc
   }, {})
@@ -630,4 +637,3 @@ export default function AnalyticsPage() {
     </div>
   )
 }
-

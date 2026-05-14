@@ -14,8 +14,9 @@ import {
   FileCog,
   FolderKanban,
   Globe,
-  Image as ImageIcon,
   Layers,
+  MapPinned,
+  Radar,
   Timer,
   TrendingUp,
   Wrench,
@@ -39,10 +40,18 @@ type DashboardPayload = {
     avgVisitDuration: number
     trafficGrowth: number
     contentHealthScore: number
+    countryCoverage: number
+    mobileShare: number
   }
   trends: Array<{ day: string; visits: number }>
   devices: Array<{ label: string; total: number }>
+  countries: Array<{ country: string; total: number }>
+  sources: Array<{ source: string; total: number }>
   topPages: Array<{ page: string; total: number }>
+  insights: {
+    topCountry: { country: string; total: number } | null
+    topSource: { source: string; total: number } | null
+  }
   recentUpdates: Array<{ id: string; title: string; type: string; updated_at: string }>
   health: {
     missingBlocks: string[]
@@ -250,7 +259,7 @@ export default function AdminDashboard() {
     )
   }
 
-  const { summary, devices, topPages, recentUpdates, health } = data
+  const { summary, devices, countries, sources, topPages, recentUpdates, insights, health } = data
   const topPage = topPages[0]
   const growthText =
     summary.trafficGrowth > 0
@@ -359,12 +368,16 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Activos</CardTitle>
-            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm text-muted-foreground">Paises detectados</CardTitle>
+            <MapPinned className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold">{summary.media}</div>
-            <p className="text-xs text-muted-foreground">{summary.faqPublished} FAQ publicadas.</p>
+            <div className="text-3xl font-semibold">{summary.countryCoverage}</div>
+            <p className="text-xs text-muted-foreground">
+              {insights.topCountry
+                ? `${insights.topCountry.country} lidera con ${insights.topCountry.total} visitas.`
+                : "Aun no hay geolocalizacion disponible."}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -411,6 +424,16 @@ export default function AdminDashboard() {
             </div>
             <div className="rounded-xl border border-border bg-card/50 p-4">
               <div className="mb-1 flex items-center gap-2 font-medium">
+                <Radar className="h-4 w-4 text-primary" />
+                Audiencia
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {summary.mobileShare}% del trafico llega desde movil o tablet
+                {insights.topCountry ? ` y ${insights.topCountry.country} es el pais con mas actividad.` : "."}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-card/50 p-4">
+              <div className="mb-1 flex items-center gap-2 font-medium">
                 <Globe className="h-4 w-4 text-primary" />
                 Pagina mas visitada
               </div>
@@ -421,10 +444,12 @@ export default function AdminDashboard() {
             <div className="rounded-xl border border-border bg-card/50 p-4">
               <div className="mb-1 flex items-center gap-2 font-medium">
                 <Wrench className="h-4 w-4 text-primary" />
-                Publicacion
+                Adquisicion
               </div>
               <p className="text-sm text-muted-foreground">
-                {summary.servicesPublished} servicios y {summary.projectsPublished} proyectos ya estan visibles al publico.
+                {insights.topSource
+                  ? `${insights.topSource.source} aporta ${insights.topSource.total} visitas registradas.`
+                  : "Aun no hay una fuente dominante identificada."}
               </p>
             </div>
           </CardContent>
@@ -539,6 +564,62 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Origen geografico</CardTitle>
+            <CardDescription>Paises desde donde realmente estan entrando usuarios.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {countries.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                Aun no hay visitas geolocalizadas para mostrar.
+              </div>
+            ) : (
+              countries.map((item) => (
+                <div
+                  key={item.country}
+                  className="flex items-center justify-between rounded-xl border border-border bg-card/50 px-4 py-3"
+                >
+                  <div>
+                    <p className="font-medium">{item.country}</p>
+                    <p className="text-sm text-muted-foreground">Visitas registradas</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{item.total}</p>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Fuentes de trafico</CardTitle>
+            <CardDescription>Canales y dominios que estan llevando visitas al sitio.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {sources.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                Aun no hay suficiente informacion para perfilar la adquisicion.
+              </div>
+            ) : (
+              sources.map((item) => (
+                <div
+                  key={item.source}
+                  className="flex items-center justify-between rounded-xl border border-border bg-card/50 px-4 py-3"
+                >
+                  <div>
+                    <p className="font-medium">{item.source}</p>
+                    <p className="text-sm text-muted-foreground">Sesiones atribuidas</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{item.total}</p>
+                </div>
+              ))
             )}
           </CardContent>
         </Card>

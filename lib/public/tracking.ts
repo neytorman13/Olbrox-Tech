@@ -79,30 +79,68 @@ export async function trackWhatsAppClick(opts: {
   } catch {}
 }
 
-export async function trackPageView(pagePath: string) {
+type TrackPageViewPayload = {
+  eventId?: string
+  pagePath: string
+  sessionId?: string | null
+  visitDuration?: number
+}
+
+function buildPageViewBody(payload: TrackPageViewPayload) {
+  const params =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : new URLSearchParams()
+
+  return {
+    event_id: payload.eventId,
+    page_path: payload.pagePath,
+    session_id: payload.sessionId || null,
+    visit_duration: payload.visitDuration || 0,
+    referrer: typeof document !== "undefined" ? document.referrer || null : null,
+    utm_source: params.get("utm_source"),
+    utm_medium: params.get("utm_medium"),
+    utm_campaign: params.get("utm_campaign"),
+  }
+}
+
+export function trackPageViewWithBeacon(payload: TrackPageViewPayload) {
   try {
-    const db = createClient()
-    const ua = typeof navigator !== "undefined" ? navigator.userAgent : ""
-    const isMobile = /Mobi|Android|iPhone|iPad/i.test(ua)
-    const isTablet = /Tablet|iPad/i.test(ua)
-    const device_type = isTablet ? "tablet" : isMobile ? "mobile" : "desktop"
+    if (typeof navigator === "undefined" || typeof navigator.sendBeacon !== "function") {
+      return false
+    }
+
+    const blob = new Blob([JSON.stringify(buildPageViewBody(payload))], {
+      type: "application/json",
+    })
+
+    return navigator.sendBeacon("/api/analytics/track", blob)
+  } catch {
+    return false
+  }
+}
+
+export async function trackPageView(payload: TrackPageViewPayload) {
+  try {
     const sessionKey = "olbrox_session_id"
-    let sessionId: string | null = null
+    let sessionId = payload.sessionId || null
+
     if (typeof window !== "undefined") {
-      sessionId = sessionStorage.getItem(sessionKey)
+      sessionId = sessionId || sessionStorage.getItem(sessionKey)
       if (!sessionId) {
         sessionId = crypto.randomUUID()
         sessionStorage.setItem(sessionKey, sessionId)
       }
     }
-    await db.from("page_analytics").insert({
-      page_path: pagePath,
-      user_agent: ua || null,
-      referrer: typeof document !== "undefined" ? document.referrer || null : null,
-      device_type,
-      session_id: sessionId,
+
+    await fetch("/api/analytics/track", {
+      method: "POST",
+      credentials: "include",
+      keepalive: true,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(buildPageViewBody({ ...payload, sessionId })),
     })
   } catch {}
 }
-
-
