@@ -72,13 +72,18 @@ const databaseUrl = process.env.MYSQL_URL || process.env.DATABASE_URL
 const urlConfig = databaseUrl ? parseDatabaseUrl(databaseUrl) : {}
 const mysqlSsl = resolveSslConfig()
 const isProduction = process.env.NODE_ENV === 'production'
+const envHost = process.env.MYSQL_HOST
+const envUser = process.env.MYSQL_USER
+const envDatabase = process.env.MYSQL_DATABASE
+const hasExplicitMysqlParts = Boolean(envHost && envUser && envDatabase)
+const mysqlConfigured = Boolean(databaseUrl || hasExplicitMysqlParts)
 
 const mysqlPool = mysql.createPool({
-  host: urlConfig.host || process.env.MYSQL_HOST || '127.0.0.1',
+  host: urlConfig.host || envHost || '127.0.0.1',
   port: urlConfig.port || Number(process.env.MYSQL_PORT || 3306),
-  user: urlConfig.user || process.env.MYSQL_USER || 'root',
+  user: urlConfig.user || envUser || 'root',
   password: urlConfig.password ?? process.env.MYSQL_PASSWORD ?? '',
-  database: urlConfig.database || process.env.MYSQL_DATABASE || 'olbrox_db',
+  database: urlConfig.database || envDatabase || 'olbrox_db',
   waitForConnections: true,
   connectionLimit: Number(process.env.MYSQL_MAX_CONNECTIONS || 10),
   queueLimit: 0,
@@ -93,7 +98,6 @@ sqliteDb.pragma('foreign_keys = ON')
 
 let activePool: QueryPool | null = null
 const sqliteFallbackPool = createSqlitePool()
-const mysqlConfigured = Boolean(databaseUrl || process.env.MYSQL_HOST || process.env.MYSQL_DATABASE || process.env.MYSQL_USER)
 
 async function testMysqlConnection(pool: mysql.Pool): Promise<void> {
   const connection = await pool.getConnection()
