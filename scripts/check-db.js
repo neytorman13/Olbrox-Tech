@@ -1,0 +1,11 @@
+const Database = require('better-sqlite3');
+const path = require('path');
+const dbPath = path.join(process.cwd(), 'olbrox.db');
+const db = new Database(dbPath);
+console.log('Path:', dbPath);
+const rows = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+console.log(rows);
+const pageSeo = db.prepare("SELECT count(*) as cnt FROM sqlite_master WHERE type='table' AND name='page_seo'").get();
+const contentBlocks = db.prepare("SELECT count(*) as cnt FROM sqlite_master WHERE type='table' AND name='content_blocks'").get();
+console.log('page_seo exists', pageSeo.cnt, 'content_blocks exists', contentBlocks.cnt);
+db.close();
