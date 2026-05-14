@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS website_settings (
 
 CREATE TABLE IF NOT EXISTS page_seo (
   id CHAR(36) NOT NULL PRIMARY KEY,
-  page_identifier TEXT UNIQUE NOT NULL,
+  page_identifier VARCHAR(191) NOT NULL,
   page_name TEXT NOT NULL,
   meta_title_es TEXT,
   meta_title_en TEXT,
@@ -62,7 +62,8 @@ CREATE TABLE IF NOT EXISTS page_seo (
   keywords JSON,
   canonical_url TEXT,
   no_index BOOLEAN DEFAULT FALSE,
-  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  UNIQUE KEY uk_page_seo_identifier (page_identifier)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS page_analytics (
@@ -248,7 +249,7 @@ CREATE TABLE IF NOT EXISTS quotations (
   client_company TEXT,
   project_title TEXT NOT NULL,
   project_description TEXT,
-  items JSON NOT NULL DEFAULT '[]',
+  items JSON NOT NULL,
   subtotal DECIMAL(12,2) NOT NULL DEFAULT 0,
   tax_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
   tax_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -335,7 +336,7 @@ CREATE TABLE IF NOT EXISTS activity_log (
 
 CREATE TABLE IF NOT EXISTS emails (
   id CHAR(36) NOT NULL PRIMARY KEY,
-  message_id TEXT UNIQUE,
+  message_id VARCHAR(255),
   thread_id TEXT,
   from_name TEXT,
   from_email TEXT NOT NULL,
@@ -354,6 +355,7 @@ CREATE TABLE IF NOT EXISTS emails (
   received_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
   created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
   CONSTRAINT fk_emails_lead FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL,
+  UNIQUE KEY uk_emails_message_id (message_id),
   INDEX idx_emails_received (received_at),
   INDEX idx_emails_read (is_read),
   INDEX idx_emails_lead (lead_id)
@@ -363,7 +365,7 @@ CREATE TABLE IF NOT EXISTS customers (
   id CHAR(36) NOT NULL PRIMARY KEY,
   lead_id CHAR(36),
   full_name TEXT NOT NULL,
-  email TEXT NOT NULL,
+  email VARCHAR(255) NOT NULL,
   phone TEXT,
   company TEXT,
   position TEXT,
@@ -432,7 +434,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
   id CHAR(36) NOT NULL PRIMARY KEY,
   user_id CHAR(36) NOT NULL,
   role ENUM('super_admin','admin','editor','sales','marketing','support','viewer') NOT NULL,
-  permissions JSON DEFAULT '{}',
+  permissions JSON,
   granted_by CHAR(36),
   granted_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
   revoked_at DATETIME(6),
@@ -442,17 +444,18 @@ CREATE TABLE IF NOT EXISTS user_roles (
 
 CREATE TABLE IF NOT EXISTS legal_docs (
   id CHAR(36) NOT NULL PRIMARY KEY,
-  doc_key TEXT UNIQUE NOT NULL,
+  doc_key VARCHAR(191) NOT NULL,
   title_es TEXT NOT NULL,
   title_en TEXT,
   title_pt TEXT,
   content_es TEXT,
   content_en TEXT,
   content_pt TEXT,
-  version TEXT DEFAULT '1.0',
+  version VARCHAR(50) DEFAULT '1.0',
   is_published BOOLEAN DEFAULT TRUE,
   updated_by CHAR(36),
-  updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
+  updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  UNIQUE KEY uk_legal_docs_key (doc_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS form_submissions (
@@ -515,7 +518,7 @@ CREATE TABLE IF NOT EXISTS backups (
 
 CREATE TABLE IF NOT EXISTS blog_categories (
   id CHAR(36) NOT NULL PRIMARY KEY,
-  slug TEXT UNIQUE NOT NULL,
+  slug VARCHAR(191) NOT NULL,
   name_es TEXT NOT NULL,
   name_en TEXT,
   name_pt TEXT,
@@ -523,7 +526,8 @@ CREATE TABLE IF NOT EXISTS blog_categories (
   description_en TEXT,
   description_pt TEXT,
   display_order INT DEFAULT 0,
-  created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6)
+  created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
+  UNIQUE KEY uk_blog_categories_slug (slug)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO users (id, email, full_name, password_hash, role, created_at, updated_at)

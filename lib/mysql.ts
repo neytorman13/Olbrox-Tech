@@ -10,6 +10,12 @@ interface MySqlConfig {
   database: string
 }
 
+type MySqlSslConfig =
+  | {
+      rejectUnauthorized: boolean
+    }
+  | undefined
+
 interface QueryPool {
   execute(sql: string, values?: unknown[]): Promise<[any, any]>
 }
@@ -37,8 +43,26 @@ function parseDatabaseUrl(url: string): Partial<MySqlConfig> {
   }
 }
 
+function envFlag(value: string | undefined, defaultValue = false) {
+  if (value == null) return defaultValue
+  return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase())
+}
+
+function resolveSslConfig(): MySqlSslConfig {
+  const sslEnabled = envFlag(process.env.MYSQL_SSL, false)
+  if (!sslEnabled) {
+    return undefined
+  }
+
+  return {
+    rejectUnauthorized: envFlag(process.env.MYSQL_SSL_REJECT_UNAUTHORIZED, false),
+  }
+}
+
 const databaseUrl = process.env.MYSQL_URL || process.env.DATABASE_URL
 const urlConfig = databaseUrl ? parseDatabaseUrl(databaseUrl) : {}
+const mysqlSsl = resolveSslConfig()
+const isProduction = process.env.NODE_ENV === 'production'
 
 const mysqlPool = mysql.createPool({
   host: urlConfig.host || process.env.MYSQL_HOST || '127.0.0.1',
@@ -50,6 +74,7 @@ const mysqlPool = mysql.createPool({
   connectionLimit: Number(process.env.MYSQL_MAX_CONNECTIONS || 10),
   queueLimit: 0,
   timezone: 'Z',
+  ssl: mysqlSsl,
 })
 
 const sqliteDbPath = path.join(process.cwd(), 'olbrox.db')
@@ -106,6 +131,10 @@ async function getPool(): Promise<QueryPool> {
     return activePool
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error)
+    if (mysqlConfigured && isProduction) {
+      throw new Error(`MySQL connection failed in production: ${errorMessage}`)
+    }
+
     console.warn('MySQL connection failed, falling back to SQLite:', errorMessage)
 
     // If MySQL is configured, keep retrying on future calls instead of
