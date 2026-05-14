@@ -26,10 +26,16 @@ const iconLookup = {
 
 export default async function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const row = await querySingle<ServiceRecord>(
-    "SELECT * FROM services WHERE slug = ? AND is_published = 1 LIMIT 1",
-    [slug],
-  )
+  let row: ServiceRecord | null = null
+
+  try {
+    row = await querySingle<ServiceRecord>(
+      "SELECT * FROM services WHERE slug = ? AND is_published = 1 LIMIT 1",
+      [slug],
+    )
+  } catch (error) {
+    console.error(`Error loading service ${slug}:`, error)
+  }
 
   if (!row) {
     notFound()

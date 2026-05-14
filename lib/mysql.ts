@@ -48,8 +48,17 @@ function envFlag(value: string | undefined, defaultValue = false) {
   return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase())
 }
 
+function shouldEnableManagedSsl(host: string | undefined) {
+  if (!host) return false
+  return (
+    host.endsWith('.rlwy.net') ||
+    host.endsWith('.railway.internal') ||
+    host.includes('proxy.rlwy.net')
+  )
+}
+
 function resolveSslConfig(): MySqlSslConfig {
-  const sslEnabled = envFlag(process.env.MYSQL_SSL, false)
+  const sslEnabled = envFlag(process.env.MYSQL_SSL, shouldEnableManagedSsl(urlConfig.host))
   if (!sslEnabled) {
     return undefined
   }
@@ -74,6 +83,7 @@ const mysqlPool = mysql.createPool({
   connectionLimit: Number(process.env.MYSQL_MAX_CONNECTIONS || 10),
   queueLimit: 0,
   timezone: 'Z',
+  connectTimeout: Number(process.env.MYSQL_CONNECT_TIMEOUT || 10000),
   ssl: mysqlSsl,
 })
 

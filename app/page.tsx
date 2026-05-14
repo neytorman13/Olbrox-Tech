@@ -15,11 +15,19 @@ import { fetchPublishedContentBlockByIdentifier } from "@/lib/public/content-blo
 export const dynamic = "force-dynamic"
 
 export default async function Home() {
-  const [heroBlock, aboutBlock, ctaBlock] = await Promise.all([
-    fetchPublishedContentBlockByIdentifier("hero"),
-    fetchPublishedContentBlockByIdentifier("about"),
-    fetchPublishedContentBlockByIdentifier("cta"),
-  ])
+  let heroBlock = null
+  let aboutBlock = null
+  let ctaBlock = null
+
+  try {
+    ;[heroBlock, aboutBlock, ctaBlock] = await Promise.all([
+      fetchPublishedContentBlockByIdentifier("hero"),
+      fetchPublishedContentBlockByIdentifier("about"),
+      fetchPublishedContentBlockByIdentifier("cta"),
+    ])
+  } catch (error) {
+    console.error("Error loading home content blocks:", error)
+  }
 
   return (
     <main className="min-h-screen bg-background overflow-x-hidden">
