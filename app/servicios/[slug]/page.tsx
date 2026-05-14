@@ -28,6 +28,13 @@ const iconLookup = {
   palette: Brush,
 }
 
+const ambientIcons = [
+  { Icon: Cog, x: "10%", y: "22%", delay: "0s" },
+  { Icon: Smartphone, x: "86%", y: "18%", delay: "0.8s" },
+  { Icon: Brain, x: "78%", y: "72%", delay: "1.6s" },
+  { Icon: Globe, x: "14%", y: "76%", delay: "2.4s" },
+]
+
 function getFallbackService(slug: string): ServiceRecord | null {
   const fallback = defaultServices.find((service) => service.slug === slug && service.is_published)
   if (!fallback) {
@@ -90,15 +97,22 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         <GridPattern />
         <GlowingLines />
         <BackgroundPaths />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,hsl(var(--background)/0.82)_68%,hsl(var(--background))_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,hsl(var(--background)/0.8)_70%,hsl(var(--background))_100%)]" />
+      </div>
+      <div className="pointer-events-none absolute inset-0 hidden lg:block">
+        {ambientIcons.map(({ Icon: AmbientIcon, x, y, delay }, index) => (
+          <div
+            key={index}
+            className="absolute animate-float rounded-2xl border border-primary/20 bg-primary/10 p-4 backdrop-blur-sm"
+            style={{ left: x, top: y, animationDelay: delay }}
+          >
+            <AmbientIcon className="h-8 w-8 text-primary" />
+          </div>
+        ))}
       </div>
       <Header />
 
-      <section className="relative overflow-hidden border-b border-border/50 pt-36">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#1d4ed830,transparent_45%),linear-gradient(180deg,rgba(10,10,12,0.9),rgba(10,10,12,0.78))]" />
-        <div className="absolute -left-16 top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute right-0 top-10 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
-
+      <section className="relative flex min-h-screen items-center overflow-hidden border-b border-border/50 pt-36">
         <div className="relative z-10 mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
           <Link
             href="/#servicios"
