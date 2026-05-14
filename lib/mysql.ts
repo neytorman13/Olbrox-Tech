@@ -92,12 +92,8 @@ const mysqlPool = mysql.createPool({
   ssl: mysqlSsl,
 })
 
-const sqliteDbPath = path.join(process.cwd(), 'olbrox.db')
-const sqliteDb = new Database(sqliteDbPath, { fileMustExist: false })
-sqliteDb.pragma('foreign_keys = ON')
-
 let activePool: QueryPool | null = null
-const sqliteFallbackPool = createSqlitePool()
+let sqliteFallbackPool: QueryPool | null = null
 
 async function testMysqlConnection(pool: mysql.Pool): Promise<void> {
   const connection = await pool.getConnection()
@@ -105,6 +101,10 @@ async function testMysqlConnection(pool: mysql.Pool): Promise<void> {
 }
 
 function createSqlitePool(): QueryPool {
+  const sqliteDbPath = path.join(process.cwd(), 'olbrox.db')
+  const sqliteDb = new Database(sqliteDbPath, { fileMustExist: false })
+  sqliteDb.pragma('foreign_keys = ON')
+
   return {
     execute: async (sql: string, values: unknown[] = []) => {
       const statement = sqliteDb.prepare(sql)
@@ -128,6 +128,13 @@ function createSqlitePool(): QueryPool {
       return [result, []]
     },
   }
+}
+
+function getSqliteFallbackPool() {
+  if (!sqliteFallbackPool) {
+    sqliteFallbackPool = createSqlitePool()
+  }
+  return sqliteFallbackPool
 }
 
 async function getPool(): Promise<QueryPool> {
@@ -154,10 +161,10 @@ async function getPool(): Promise<QueryPool> {
     // If MySQL is configured, keep retrying on future calls instead of
     // permanently pinning this process to SQLite after one transient failure.
     if (mysqlConfigured) {
-      return sqliteFallbackPool
+      return getSqliteFallbackPool()
     }
 
-    activePool = sqliteFallbackPool
+    activePool = getSqliteFallbackPool()
     return activePool
   }
 }
