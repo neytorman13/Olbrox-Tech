@@ -6,6 +6,9 @@ import { Footer } from "@/components/footer"
 import { Contact } from "@/components/contact"
 import { WhatsAppButton } from "@/components/whatsapp-button"
 import { PageViewTracker } from "@/components/page-view-tracker"
+import { ParticlesBackground, FloatingOrbs } from "@/components/backgrounds/particles"
+import { GridPattern } from "@/components/backgrounds/grid-pattern"
+import { GlowingLines, BackgroundPaths } from "@/components/backgrounds/glowing-lines"
 import { querySingle } from "@/lib/db"
 import { normalizeService, type ServiceRecord } from "@/lib/services"
 import { defaultServices } from "@/lib/site-defaults"
@@ -79,13 +82,20 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const Icon = iconLookup[service.icon as keyof typeof iconLookup] || Sparkles
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-background">
+    <main className="relative min-h-screen overflow-x-hidden bg-background">
       <PageViewTracker path={`/servicios/${service.slug}`} />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <ParticlesBackground />
+        <FloatingOrbs />
+        <GridPattern />
+        <GlowingLines />
+        <BackgroundPaths />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,hsl(var(--background)/0.82)_68%,hsl(var(--background))_100%)]" />
+      </div>
       <Header />
 
       <section className="relative overflow-hidden border-b border-border/50 pt-36">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#1d4ed830,transparent_45%),linear-gradient(180deg,rgba(10,10,12,0.98),rgba(10,10,12,0.94))]" />
-        <div className="absolute inset-0 grid-pattern opacity-40" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#1d4ed830,transparent_45%),linear-gradient(180deg,rgba(10,10,12,0.9),rgba(10,10,12,0.78))]" />
         <div className="absolute -left-16 top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute right-0 top-10 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
 
